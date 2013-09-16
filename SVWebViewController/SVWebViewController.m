@@ -18,11 +18,10 @@
 @property (nonatomic, strong, readonly) UIActionSheet *pageActionSheet;
 
 @property (nonatomic, strong) UIWebView *mainWebView;
-@property (nonatomic, strong) NSURL *URL;
+@property (nonatomic, strong) NSURLRequest *request;
 
 - (id)initWithAddress:(NSString*)urlString;
 - (id)initWithURL:(NSURL*)URL;
-- (void)loadURL:(NSURL*)URL;
 
 - (void)updateToolbarItems;
 
@@ -39,7 +38,7 @@
 
 @synthesize availableActions;
 
-@synthesize URL, mainWebView;
+@synthesize request=_request, mainWebView;
 @synthesize backBarButtonItem, forwardBarButtonItem, refreshBarButtonItem, stopBarButtonItem, actionBarButtonItem, pageActionSheet;
 
 #pragma mark - setters and getters
@@ -125,17 +124,25 @@
 }
 
 - (id)initWithURL:(NSURL*)pageURL {
-    
-    if(self = [super init]) {
-        self.URL = pageURL;
+    if(self = [self init]) {
+        self.request = [NSURLRequest requestWithURL:pageURL];
         self.availableActions = SVWebViewControllerAvailableActionsOpenInSafari | SVWebViewControllerAvailableActionsOpenInChrome | SVWebViewControllerAvailableActionsMailLink;
     }
     
     return self;
 }
 
-- (void)loadURL:(NSURL *)pageURL {
-    [mainWebView loadRequest:[NSURLRequest requestWithURL:pageURL]];
+- (id)initWithRequest:(NSURLRequest *)request {
+    if(self = [super init]) {
+        self.request = request;
+        self.availableActions = SVWebViewControllerAvailableActionsOpenInSafari | SVWebViewControllerAvailableActionsOpenInChrome | SVWebViewControllerAvailableActionsMailLink;
+    }
+    return self;
+}
+
+- (void)loadRequest:(NSURLRequest *)request {
+    self.request = request;
+    [mainWebView loadRequest:request];
 }
 
 #pragma mark - View lifecycle
@@ -144,7 +151,7 @@
     mainWebView = [[UIWebView alloc] initWithFrame:[UIScreen mainScreen].bounds];
     mainWebView.delegate = self;
     mainWebView.scalesPageToFit = YES;
-    [self loadURL:self.URL];
+    [self loadRequest:self.request];
     self.view = mainWebView;
 }
 

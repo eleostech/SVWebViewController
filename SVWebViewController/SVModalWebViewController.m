@@ -35,6 +35,15 @@
     return self;
 }
 
+- (id)initWithRequest:(NSURLRequest *)request {
+  self.webViewController = [[SVWebViewController alloc] initWithRequest:request];
+  if (self = [super initWithRootViewController:self.webViewController]) {
+    self.webViewController.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:webViewController action:@selector(doneButtonClicked:)];
+  }
+  return self;
+
+}
+
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:NO];
     

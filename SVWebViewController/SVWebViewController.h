@@ -14,7 +14,10 @@
 
 - (id)initWithAddress:(NSString*)urlString;
 - (id)initWithURL:(NSURL*)URL;
+- (id)initWithRequest:(NSURLRequest*)request;
+- (void)loadRequest:(NSURLRequest *)request;
 
 @property (nonatomic, readwrite) SVWebViewControllerAvailableActions availableActions;
 
 @end
+
