@@ -11,4 +11,5 @@ Pod::Spec.new do |s|
   s.resources = 'SVWebViewController/SVWebViewController.bundle'
   s.framework  = 'MessageUI'
   s.requires_arc = true
+  s.dependency 'MBProgressHUD', '0.5'
 end

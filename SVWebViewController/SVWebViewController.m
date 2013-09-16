@@ -7,6 +7,7 @@
 //  https://github.com/samvermette/SVWebViewController
 
 #import "SVWebViewController.h"
+#import <MBProgressHUD.h>
 
 @interface SVWebViewController () <UIWebViewDelegate, UIActionSheetDelegate, MFMailComposeViewControllerDelegate>
 
@@ -16,6 +17,8 @@
 @property (nonatomic, strong, readonly) UIBarButtonItem *stopBarButtonItem;
 @property (nonatomic, strong, readonly) UIBarButtonItem *actionBarButtonItem;
 @property (nonatomic, strong, readonly) UIActionSheet *pageActionSheet;
+@property (strong, nonatomic) MBProgressHUD *HUD;
+@property (nonatomic) BOOL userInititatedStop;
 
 @property (nonatomic, strong) UIWebView *mainWebView;
 @property (nonatomic, strong) NSURLRequest *request;
@@ -205,8 +208,8 @@
 - (void)dealloc
 {
     [mainWebView stopLoading];
- 	[[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
     mainWebView.delegate = nil;
+    [self setHUD:nil];
 }
 
 #pragma mark - Toolbar
@@ -284,9 +287,9 @@
                      fixedSpace,
                      nil];
         }
-        
-				self.navigationController.toolbar.barStyle = self.navigationController.navigationBar.barStyle;
-				self.navigationController.toolbar.tintColor = self.navigationController.navigationBar.tintColor;
+
+        self.navigationController.toolbar.barStyle = self.navigationController.navigationBar.barStyle;
+        self.navigationController.toolbar.tintColor = self.navigationController.navigationBar.tintColor;
         self.toolbarItems = items;
     }
 }
@@ -295,21 +298,51 @@
 #pragma mark UIWebViewDelegate
 
 - (void)webViewDidStartLoad:(UIWebView *)webView {
-	[[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:YES];
+    self.userInititatedStop = NO;
     [self updateToolbarItems];
+  
+    if (self.HUD) {
+        [self.HUD hide:NO];
+    }
+    self.HUD = [[MBProgressHUD alloc] initWithView:self.view];
+    self.HUD.mode = MBProgressHUDModeIndeterminate;
+    self.HUD.labelText = @"Loading…";
+    self.HUD.square = YES;
+    [self.view addSubview:self.HUD];
+    self.HUD.removeFromSuperViewOnHide = YES;
+    [self.HUD show:YES];
 }
 
-
 - (void)webViewDidFinishLoad:(UIWebView *)webView {
-	[[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
-    
+    self.userInititatedStop = NO;
     self.navigationItem.title = [webView stringByEvaluatingJavaScriptFromString:@"document.title"];
     [self updateToolbarItems];
+
+    if (self.HUD) {
+        [self.HUD hide:NO];
+    }
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
-	[[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:NO];
     [self updateToolbarItems];
+    if (self.HUD) {
+        [self.HUD hide:NO];
+    }
+
+    if (!self.userInititatedStop) {
+        self.HUD.square = NO;
+        self.HUD.dimBackground = YES;
+        self.HUD.customView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 0)];
+        self.HUD.mode = MBProgressHUDModeCustomView;
+        self.HUD.labelText = @"";
+        self.HUD.detailsLabelFont = self.HUD.labelFont;
+        self.HUD.detailsLabelText = @"Help could not be loaded at this time. Please make sure you are in range of cell service or are connected to Wi-Fi.\n";
+
+        [self.view addSubview:self.HUD];
+        self.HUD.removeFromSuperViewOnHide = YES;
+        [self.HUD show:NO];
+        [self.HUD hide:YES afterDelay:4.0];
+    }
 }
 
 #pragma mark - Target actions
@@ -327,6 +360,7 @@
 }
 
 - (void)stopClicked:(UIBarButtonItem *)sender {
+    self.userInititatedStop = YES;
     [mainWebView stopLoading];
 	[self updateToolbarItems];
 }
@@ -349,6 +383,16 @@
 #else
     [self dismissViewControllerAnimated:YES completion:NULL];
 #endif
+}
+
+#pragma mark - Properties
+
+- (void)setHUD:(MBProgressHUD *)HUD {
+  if (_HUD) {
+    // Make sure we don't leak spinners into the view.
+    [_HUD removeFromSuperview];
+  }
+  _HUD = HUD;
 }
 
 #pragma mark -
